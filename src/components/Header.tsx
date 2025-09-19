@@ -73,6 +73,7 @@ interface HeaderProps {
   onAlertDismiss?: (alert: AlertItem) => void;
   user?: User;
   onLogout?: () => void;
+  showPortals?: boolean;
 }
 
 export default function Header({
@@ -95,6 +96,7 @@ export default function Header({
   onAlertDismiss,
   user,
   onLogout,
+  showPortals = true,
 }: HeaderProps) {
   const [mounted, setMounted] = React.useState(false);
   const [themeDark, setThemeDark] = React.useState(true);
@@ -236,19 +238,23 @@ export default function Header({
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Portals</DropdownMenuLabel>
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link href="/customer" className="w-full rounded-sm px-2 py-1.5 text-sm">Customer</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/owner" className="w-full rounded-sm px-2 py-1.5 text-sm">Client</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin" className="w-full rounded-sm px-2 py-1.5 text-sm">Admin</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
+                {showPortals ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">Portals</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem asChild>
+                        <Link href="/customer" className="w-full rounded-sm px-2 py-1.5 text-sm">Customer</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/owner" className="w-full rounded-sm px-2 py-1.5 text-sm">Client</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="w-full rounded-sm px-2 py-1.5 text-sm">Admin</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -280,17 +286,19 @@ export default function Header({
           </div>
 
           {/* Quick Portals - Desktop */}
-          <div className="hidden md:flex items-center gap-2 pl-2">
-            <Button asChild variant="ghost" className="h-9 px-3">
-              <Link href="/customer">Customer</Link>
-            </Button>
-            <Button asChild variant="ghost" className="h-9 px-3">
-              <Link href="/owner">Client</Link>
-            </Button>
-            <Button asChild variant="ghost" className="h-9 px-3">
-              <Link href="/admin">Admin</Link>
-            </Button>
-          </div>
+          {showPortals ? (
+            <div className="hidden md:flex items-center gap-2 pl-2">
+              <Button asChild variant="ghost" className="h-9 px-3">
+                <Link href="/customer">Customer</Link>
+              </Button>
+              <Button asChild variant="ghost" className="h-9 px-3">
+                <Link href="/owner">Client</Link>
+              </Button>
+              <Button asChild variant="ghost" className="h-9 px-3">
+                <Link href="/admin">Admin</Link>
+              </Button>
+            </div>
+          ) : null}
 
           {/* Spacer */}
           <div className="flex-1" />

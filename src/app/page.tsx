@@ -41,6 +41,7 @@ type AlertItem = {
 export default function Page() {
   const [activeTab, setActiveTab] = React.useState<NavKey>("dashboard");
   const [showPortalPicker, setShowPortalPicker] = React.useState(true);
+  const [portal, setPortal] = React.useState<"customer" | "client" | "admin" | null>(null);
 
   const [alerts, setAlerts] = React.useState<AlertItem[]>([
     {
@@ -71,71 +72,125 @@ export default function Page() {
   );
 
   const navItems = React.useMemo(
-    () => [
-      { key: "dashboard", label: "Dashboard", href: "#" },
-      { key: "spaces", label: "Spaces", href: "#" },
-      { key: "reservations", label: "Reservations", href: "#" },
-      { key: "billing", label: "Billing", href: "#" },
-      { key: "visitors", label: "Visitors", href: "#" },
-      { key: "reports", label: "Reports", href: "#" },
-      { key: "settings", label: "Settings", href: "#" },
-      { key: "addParking", label: "Add Parking", href: "#" },
-    ],
-    []
+    () => {
+      if (portal === "customer") {
+        return [
+          { key: "reservations", label: "Reservations", href: "#" },
+        ];
+      }
+      if (portal === "client") {
+        return [
+          { key: "addParking", label: "Add Parking", href: "#" },
+        ];
+      }
+      if (portal === "admin") {
+        return [
+          { key: "dashboard", label: "Dashboard", href: "#" },
+          { key: "spaces", label: "Spaces", href: "#" },
+          { key: "reservations", label: "Reservations", href: "#" },
+          { key: "billing", label: "Billing", href: "#" },
+          { key: "visitors", label: "Visitors", href: "#" },
+          { key: "reports", label: "Reports", href: "#" },
+          { key: "settings", label: "Settings", href: "#" },
+        ];
+      }
+      return [] as { key: string; label: string; href: string }[];
+    },
+    [portal]
   );
 
+  // Allowed tabs by portal to strictly gate navigation and rendering
+  const allowedTabs = React.useMemo<NavKey[]>(() => {
+    if (portal === "customer") return ["reservations"];
+    if (portal === "client") return ["addParking"];
+    if (portal === "admin") return [
+      "dashboard",
+      "spaces",
+      "reservations",
+      "billing",
+      "visitors",
+      "reports",
+      "settings",
+    ];
+    return [];
+  }, [portal]);
+
+  // Ensure activeTab always valid for selected portal
+  React.useEffect(() => {
+    if (!portal) return;
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(allowedTabs[0]);
+    }
+  }, [portal, allowedTabs, activeTab]);
+
   const handleTabChange = React.useCallback((key: string) => {
-    setActiveTab(key as NavKey);
-  }, []);
+    const k = key as NavKey;
+    if (allowedTabs.includes(k)) setActiveTab(k);
+    else if (allowedTabs.length) setActiveTab(allowedTabs[0]);
+  }, [allowedTabs]);
 
-  const handleSearchSelect = React.useCallback((item: SearchItem) => {
-    // Route to a relevant section when selecting a result
-    if (item.type === "plate") {
-      setActiveTab("reservations");
-    } else {
-      setActiveTab("visitors");
-    }
-  }, []);
+  const handleSearchSelect = React.useCallback((item: any) => {
+    // Route to a relevant section when selecting a result, but stay within allowed tabs
+    const wanted: NavKey = item.type === "plate" ? "reservations" : "visitors";
+    if (allowedTabs.includes(wanted)) setActiveTab(wanted);
+    else if (allowedTabs.length) setActiveTab(allowedTabs[0]);
+  }, [allowedTabs]);
 
-  const handleAlertView = React.useCallback((alert: AlertItem) => {
-    // Navigate to a relevant section based on alert type
-    if (alert.type === "violation") {
-      setActiveTab("visitors");
-    } else if (alert.type === "overstay") {
-      setActiveTab("reservations");
-    } else {
-      setActiveTab("reports");
-    }
+  const handleAlertView = React.useCallback((alert: any) => {
+    // Navigate based on alert type, constrained to allowed tabs
+    let wanted: NavKey = "reports";
+    if (alert.type === "violation") wanted = "visitors";
+    else if (alert.type === "overstay") wanted = "reservations";
+
+    if (allowedTabs.includes(wanted)) setActiveTab(wanted);
+    else if (allowedTabs.length) setActiveTab(allowedTabs[0]);
+
     // Optionally mark as read
-    setAlerts((prev) => prev.filter((a) => a.id !== alert.id));
-  }, []);
+    // ... existing setAlerts filter remains ...
+    // We'll keep the dismiss behavior the same
+  }, [allowedTabs]);
 
   const handleAlertDismiss = React.useCallback((alert: AlertItem) => {
     setAlerts((prev) => prev.filter((a) => a.id !== alert.id));
   }, []);
 
   const onLogout = React.useCallback(() => {
-    // Reset to dashboard on logout for this demo
     if (typeof window !== "undefined") {
       localStorage.removeItem("bearer_token");
     }
-    setActiveTab("dashboard");
-  }, []);
+    // Keep users within their current portal's default tab
+    setActiveTab(() => {
+      if (portal === "customer") return "reservations";
+      if (portal === "client") return "addParking";
+      return "dashboard"; // admin or no portal
+    });
+  }, [portal]);
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <Header
-        className="sticky top-0 z-40"
-        navItems={navItems}
-        activeKey={activeTab}
-        onTabChange={handleTabChange}
-        searchItems={searchItems}
-        onSearchSelect={handleSearchSelect}
-        alerts={alerts}
-        onAlertView={handleAlertView}
-        onAlertDismiss={handleAlertDismiss}
-        onLogout={onLogout}
-      />
+      {!showPortalPicker && (
+        <Header
+          className="sticky top-0 z-40"
+          navItems={navItems}
+          activeKey={activeTab}
+          onTabChange={handleTabChange}
+          searchItems={searchItems}
+          onSearchSelect={handleSearchSelect}
+          alerts={alerts}
+          onAlertView={(a) => {
+            // keep original behavior then constrain
+            let wanted: NavKey = "reports";
+            if (a.type === "violation") wanted = "visitors";
+            else if (a.type === "overstay") wanted = "reservations";
+            if (allowedTabs.includes(wanted)) setActiveTab(wanted);
+            else if (allowedTabs.length) setActiveTab(allowedTabs[0]);
+            setAlerts((prev) => prev.filter((x) => x.id !== a.id));
+          }}
+          onAlertDismiss={(a) => setAlerts((prev) => prev.filter((x) => x.id !== a.id))}
+          onLogout={onLogout}
+          showPortals={false}
+        />
+      )}
 
       {showPortalPicker ? (
         <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
@@ -144,11 +199,12 @@ export default function Page() {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Who are you?</h1>
               <p className="text-muted-foreground">Choose a portal to get started.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                 type="button"
                 className="group rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-left p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => {
+                  setPortal("customer");
                   setActiveTab("reservations");
                   setShowPortalPicker(false);
                 }}
@@ -166,6 +222,7 @@ export default function Page() {
                 type="button"
                 className="group rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-left p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => {
+                  setPortal("client");
                   setActiveTab("addParking");
                   setShowPortalPicker(false);
                 }}
@@ -176,6 +233,24 @@ export default function Page() {
                     <p className="mt-1 text-sm text-muted-foreground">Add your parking place and set your price.</p>
                   </div>
                   <span className="rounded-md bg-primary/15 text-primary px-2 py-1 text-xs">Add Parking</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="group rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-left p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setPortal("admin");
+                  setActiveTab("dashboard");
+                  setShowPortalPicker(false);
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">Admin</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">Manage spaces, users, and monitor activity.</p>
+                  </div>
+                  <span className="rounded-md bg-primary/15 text-primary px-2 py-1 text-xs">Open Admin</span>
                 </div>
               </button>
             </div>
