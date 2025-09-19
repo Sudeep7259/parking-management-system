@@ -93,7 +93,7 @@ export default function Header({
   alerts = [],
   onAlertView,
   onAlertDismiss,
-  user = { name: "Alex Johnson", role: "Administrator", email: "alex@example.com" },
+  user,
   onLogout,
 }: HeaderProps) {
   const [mounted, setMounted] = React.useState(false);
@@ -166,6 +166,16 @@ export default function Header({
     onTabChange?.(key);
   };
 
+  // --- Auth-aware user display (uses bearer token presence as lightweight heuristic) ---
+  const [hasToken, setHasToken] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHasToken(!!localStorage.getItem("bearer_token"));
+    }
+  }, []);
+
+  const isLoggedIn = !!user || hasToken;
+
   // Render
   return (
     <header
@@ -181,7 +191,7 @@ export default function Header({
           {/* Branding + Mobile menu */}
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/"
               className="flex items-center gap-2 rounded-md p-1.5 text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Parking Management Home"
             >
@@ -216,7 +226,10 @@ export default function Header({
                           "w-full rounded-sm px-2 py-1.5 text-sm",
                           activeKey === item.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                         )}
-                        onClick={() => onChangeTab(item.key)}
+                        onClick={(e) => {
+                          if (item.href === "#") e.preventDefault();
+                          onChangeTab(item.key);
+                        }}
                       >
                         {item.label}
                       </Link>
@@ -255,7 +268,9 @@ export default function Header({
                     asChild
                     onClick={() => onChangeTab(item.key)}
                   >
-                    <Link href={item.href} className="min-w-0 truncate">
+                    <Link href={item.href === "#" ? "#" : item.href} onClick={(e) => {
+                      if (item.href === "#") e.preventDefault();
+                    }} className="min-w-0 truncate">
                       {item.label}
                     </Link>
                   </TabsTrigger>
@@ -453,50 +468,61 @@ export default function Header({
               )}
             </div>
 
-            {/* Profile */}
-            <DropdownMenu open={profileOpen} onOpenChange={setProfileOpen}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-md bg-secondary px-2 py-1.5 text-left transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-haspopup="menu"
-                  aria-label="Open profile menu"
-                >
-                  <AvatarFallback name={user.name} />
-                  <div className="hidden min-w-0 sm:flex sm:flex-col">
-                    <span className="truncate text-sm text-foreground leading-tight">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground leading-tight">{user.role}</span>
-                  </div>
-                  <Settings2 className="ml-1 hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden="true" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={8} className="w-64 bg-popover text-popover-foreground">
-                <DropdownMenuLabel className="flex items-center gap-3">
-                  <AvatarFallback name={user.name} />
-                  <div className="min-w-0">
-                    <div className="truncate">{user.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{user.email ?? user.role}</div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" className="w-full">
-                      Account settings
-                    </Link>
+            {/* Profile / Auth */}
+            {isLoggedIn ? (
+              <DropdownMenu open={profileOpen} onOpenChange={setProfileOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-md bg-secondary px-2 py-1.5 text-left transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-haspopup="menu"
+                    aria-label="Open profile menu"
+                  >
+                    <AvatarFallback name={(user?.name) || "User"} />
+                    <div className="hidden min-w-0 sm:flex sm:flex-col">
+                      <span className="truncate text-sm text-foreground leading-tight">{user?.name || "User"}</span>
+                      <span className="truncate text-xs text-muted-foreground leading-tight">{user?.role || "Member"}</span>
+                    </div>
+                    <Settings2 className="ml-1 hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden="true" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={8} className="w-64 bg-popover text-popover-foreground">
+                  <DropdownMenuLabel className="flex items-center gap-3">
+                    <AvatarFallback name={(user?.name) || "User"} />
+                    <div className="min-w-0">
+                      <div className="truncate">{user?.name || "User"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{user?.email ?? user?.role ?? "Member"}</div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="w-full">
+                        Account settings
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      onLogout?.();
+                      toast.success("Signed out");
+                    }}
+                  >
+                    Sign out
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    onLogout?.();
-                    toast.success("Signed out");
-                  }}
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button asChild variant="ghost" className="h-9 px-3">
+                  <Link href="/sign-in">Sign in</Link>
+                </Button>
+                <Button asChild className="h-9 px-3 bg-primary text-primary-foreground">
+                  <Link href="/register">Register</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

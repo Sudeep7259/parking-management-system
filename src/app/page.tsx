@@ -10,6 +10,7 @@ import VisitorsAndHistory from "@/components/VisitorsAndHistory";
 import Reports from "@/components/Reports";
 import Settings from "@/components/Settings";
 import IndiaRealtime from "@/components/IndiaRealtime";
+import AddParkingSection from "@/components/AddParkingSection";
 
 type NavKey =
   | "dashboard"
@@ -18,7 +19,8 @@ type NavKey =
   | "billing"
   | "visitors"
   | "reports"
-  | "settings";
+  | "settings"
+  | "addParking";
 
 type SearchItem = {
   id: string;
@@ -76,6 +78,7 @@ export default function Page() {
       { key: "visitors", label: "Visitors", href: "#" },
       { key: "reports", label: "Reports", href: "#" },
       { key: "settings", label: "Settings", href: "#" },
+      { key: "addParking", label: "Add Parking", href: "#" },
     ],
     []
   );
@@ -112,6 +115,9 @@ export default function Page() {
 
   const onLogout = React.useCallback(() => {
     // Reset to dashboard on logout for this demo
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("bearer_token");
+    }
     setActiveTab("dashboard");
   }, []);
 
@@ -173,6 +179,12 @@ export default function Page() {
         {activeTab === "settings" && (
           <section className="space-y-6">
             <Settings />
+          </section>
+        )}
+
+        {activeTab === "addParking" && (
+          <section className="space-y-6">
+            <AddParkingSection />
           </section>
         )}
       </main>
