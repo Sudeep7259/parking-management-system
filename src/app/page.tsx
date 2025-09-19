@@ -40,6 +40,7 @@ type AlertItem = {
 
 export default function Page() {
   const [activeTab, setActiveTab] = React.useState<NavKey>("dashboard");
+  const [showPortalPicker, setShowPortalPicker] = React.useState(true);
 
   const [alerts, setAlerts] = React.useState<AlertItem[]>([
     {
@@ -136,6 +137,53 @@ export default function Page() {
         onLogout={onLogout}
       />
 
+      {showPortalPicker ? (
+        <section className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-10">
+            <div className="text-center space-y-2 mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Who are you?</h1>
+              <p className="text-muted-foreground">Choose a portal to get started.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                className="group rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-left p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setActiveTab("reservations");
+                  setShowPortalPicker(false);
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">Customer</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">View available parking slots and make reservations.</p>
+                  </div>
+                  <span className="rounded-md bg-primary/15 text-primary px-2 py-1 text-xs">Browse Slots</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="group rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-left p-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setActiveTab("addParking");
+                  setShowPortalPicker(false);
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">Client</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">Add your parking place and set your price.</p>
+                  </div>
+                  <span className="rounded-md bg-primary/15 text-primary px-2 py-1 text-xs">Add Parking</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!showPortalPicker && (
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6">
         {activeTab === "dashboard" && (
           <section className="space-y-6">
@@ -188,6 +236,7 @@ export default function Page() {
           </section>
         )}
       </main>
+      )}
     </div>
   );
 }
