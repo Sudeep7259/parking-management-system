@@ -243,7 +243,7 @@ export default function Header({
                     <Link href="/customer" className="w-full rounded-sm px-2 py-1.5 text-sm">Customer</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/owner" className="w-full rounded-sm px-2 py-1.5 text-sm">Owner</Link>
+                    <Link href="/owner" className="w-full rounded-sm px-2 py-1.5 text-sm">Client</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/admin" className="w-full rounded-sm px-2 py-1.5 text-sm">Admin</Link>
@@ -285,7 +285,7 @@ export default function Header({
               <Link href="/customer">Customer</Link>
             </Button>
             <Button asChild variant="ghost" className="h-9 px-3">
-              <Link href="/owner">Owner</Link>
+              <Link href="/owner">Client</Link>
             </Button>
             <Button asChild variant="ghost" className="h-9 px-3">
               <Link href="/admin">Admin</Link>
