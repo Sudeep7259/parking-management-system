@@ -30,7 +30,7 @@ import {
 import { Loader2, UserPlus, Edit, Trash2, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 interface AppUser {
   id: number;

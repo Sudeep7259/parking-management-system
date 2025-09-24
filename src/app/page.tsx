@@ -11,6 +11,11 @@ import Reports from "@/components/Reports";
 import Settings from "@/components/Settings";
 import IndiaRealtime from "@/components/IndiaRealtime";
 import AddParkingSection from "@/components/AddParkingSection";
+import { useCustomer } from "@/lib/hooks/use-customer";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { UserManagement } from "@/components/UserManagement";
 
 type NavKey =
   | "dashboard"
@@ -42,6 +47,8 @@ export default function Page() {
   const [activeTab, setActiveTab] = React.useState<NavKey>("dashboard");
   const [showPortalPicker, setShowPortalPicker] = React.useState(true);
   const [portal, setPortal] = React.useState<"customer" | "client" | "admin" | null>(null);
+
+  const { customer, check, track, checkout, refetch, isLoading: customerLoading } = useCustomer();
 
   const [alerts, setAlerts] = React.useState<AlertItem[]>([
     {
@@ -277,11 +284,35 @@ export default function Page() {
           </section>
         )}
 
-        {activeTab === "reservations" && (
+        {activeTab === "reservations" && customerLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : activeTab === "reservations" && !customerLoading ? (
           <section className="space-y-6">
-            <Reservations />
+            <Reservations 
+              onBookSpot={async (spotId) => {
+                const allowed = await check({ featureId: "reservations", requiredBalance: 1 });
+                if (!allowed) {
+                  toast.error("Upgrade to Pro for bookings");
+                  return;
+                }
+                // Proceed with booking, then track
+                // ... existing booking logic ...
+                await track({ featureId: "reservations", value: 1, idempotencyKey: `book-${Date.now()}` });
+                await refetch();
+              }}
+            />
+            {!customer?.products?.find(p => p.id === "pro") && (
+              <div className="text-center p-8 bg-accent/10 rounded-lg">
+                <p className="text-muted-foreground mb-4">Upgrade to Pro for unlimited bookings and priority spots.</p>
+                <Link href="/pricing" className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                  Choose Plan
+                </Link>
+              </div>
+            )}
           </section>
-        )}
+        ) : null}
 
         {activeTab === "billing" && (
           <section className="space-y-6">
@@ -304,6 +335,9 @@ export default function Page() {
         {activeTab === "users" && (
           <section className="space-y-6">
             <UserManagement />
+            <div className="p-4 bg-muted rounded-lg">
+              <Link href="/pricing" className="text-primary hover:underline">Manage User Subscriptions</Link>
+            </div>
           </section>
         )}
 
@@ -313,11 +347,34 @@ export default function Page() {
           </section>
         )}
 
-        {activeTab === "addParking" && (
+        {activeTab === "addParking" && customerLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : activeTab === "addParking" && !customerLoading ? (
           <section className="space-y-6">
-            <AddParkingSection />
+            <AddParkingSection 
+              onAddParking={async (data) => {
+                const allowed = await check({ featureId: "add-parking", requiredBalance: 1 });
+                if (!allowed) {
+                  toast.error("Pro plan required to add parking spots");
+                  return;
+                }
+                // ... existing logic ...
+                await track({ featureId: "add-parking", value: 1 });
+                await refetch();
+              }}
+            />
+            {!customer?.products?.find(p => p.id === "pro") && (
+              <div className="text-center p-8 bg-destructive/10 rounded-lg border border-destructive/30">
+                <p className="text-destructive mb-4">Free plan limits: 1 spot max. Upgrade for unlimited listings.</p>
+                <Link href="/pricing" className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md">
+                  Upgrade Now
+                </Link>
+              </div>
+            )}
           </section>
-        )}
+        ) : null}
       </main>
       )}
     </div>
