@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
  
 export async function middleware(request: NextRequest) {
-	const session = await auth.api.getSession({
-		headers: await headers()
-	})
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
  
-	if(!session) {
-		return NextResponse.redirect(new URL("/sign-in", request.url));
-	}
+  if (!session) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
  
-	return NextResponse.next();
+  return NextResponse.next();
 }
  
 export const config = {
-  runtime: "nodejs",
-  matcher: ["/admin", "/owner", "/customer", "/api/locations", "/api/reservations", "/api/transactions"], // Apply middleware to specific routes
+  matcher: [
+    "/admin/:path*",
+    "/owner/:path*",
+    "/customer/:path*",
+    "/api/locations/:path*",
+    "/api/reservations/:path*",
+    "/api/transactions/:path*",
+  ],
 };
