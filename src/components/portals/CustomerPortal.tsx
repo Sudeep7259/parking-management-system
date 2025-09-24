@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { MapPin, Navigation, Car, Clock, IndianRupee, QrCode } from "lucide-react";
+import { MapPin, Navigation, Car, Clock, IndianRupee, QrCode, Loader2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
 
@@ -133,6 +133,12 @@ export const CustomerPortal: React.FC = () => {
   useEffect(() => {
     if (coords) fetchNearby();
   }, [coords, fetchNearby]);
+
+  useEffect(() => {
+    if (!coords || fetchingNearby) return;
+    const interval = setInterval(fetchNearby, 15000); // Poll every 15s
+    return () => clearInterval(interval);
+  }, [coords, fetchNearby, fetchingNearby]);
 
   const formatINR = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
 
@@ -334,38 +340,50 @@ export const CustomerPortal: React.FC = () => {
         {error && <div className="text-destructive text-sm" role="alert">{error}</div>}
 
         {/* Nearby results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {nearby.map((loc) => (
-            <Card key={loc.id} className={`border-border hover:border-primary/50 transition-colors ${selected?.id === loc.id ? "ring-1 ring-primary" : ""}`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="truncate">{loc.title}</span>
-                  <span className="text-sm font-medium text-muted-foreground">{(loc.distance_meters ?? 0) < 50 ? "<50m" : `${Math.round((loc.distance_meters ?? 0))} m`}</span>
-                </CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {loc.address}{loc.city ? `, ${loc.city}` : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-secondary/50">{loc.availableSlots} / {loc.totalSlots} available</Badge>
-                  <Badge variant="secondary" className="bg-secondary/50">
-                    {loc.pricingMode === "hourly" ? (<span className="inline-flex items-center"><IndianRupee className="w-3 h-3 mr-1" />{(loc.basePricePerHourPaise/100).toFixed(0)}/hr</span>) : "Slab pricing"}
-                  </Badge>
-                  {typeof loc.eta_minutes === "number" && (
-                    <Badge variant="secondary" className="bg-secondary/50"><Clock className="w-3 h-3 mr-1" />{loc.eta_minutes} min</Badge>
-                  )}
+        {nearby.length > 0 && (
+          <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {nearby.map((loc) => (
+                <Card key={loc.id} className={`border-border hover:border-primary/50 transition-colors ${selected?.id === loc.id ? "ring-1 ring-primary" : ""}`}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center justify-between">
+                      <span className="truncate">{loc.title}</span>
+                      <span className="text-sm font-medium text-muted-foreground">{(loc.distance_meters ?? 0) < 50 ? "<50m" : `${Math.round((loc.distance_meters ?? 0))} m`}</span>
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {loc.address}{loc.city ? `, ${loc.city}` : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-secondary/50">{loc.availableSlots} / {loc.totalSlots} available</Badge>
+                      <Badge variant="secondary" className="bg-secondary/50">
+                        {loc.pricingMode === "hourly" ? (<span className="inline-flex items-center"><IndianRupee className="w-3 h-3 mr-1" />{(loc.basePricePerHourPaise/100).toFixed(0)}/hr</span>) : "Slab pricing"}
+                      </Badge>
+                      {typeof loc.eta_minutes === "number" && (
+                        <Badge variant="secondary" className="bg-secondary/50"><Clock className="w-3 h-3 mr-1" />{loc.eta_minutes} min</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="bg-primary text-primary-foreground" onClick={() => setSelected(loc)}>Select</Button>
+                      {selected?.id === loc.id && (
+                        <span className="text-xs text-muted-foreground">Selected</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            {fetchingNearby && (
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                <div className="text-center">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
+                  <p className="text-sm text-muted-foreground">Updating availability...</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" className="bg-primary text-primary-foreground" onClick={() => setSelected(loc)}>Select</Button>
-                  {selected?.id === loc.id && (
-                    <span className="text-xs text-muted-foreground">Selected</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Booking / Payment */}
         {selected && (

@@ -128,3 +128,16 @@ export const transactions = sqliteTable('transactions', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+// Add new app_users table
+export const appUsers = sqliteTable('app_users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  authUserId: text('auth_user_id').notNull().references(() => user.id, { onDelete: 'cascade' }).unique(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  phone: text('phone'),
+  role: text('role').notNull().default('customer'), // customer, client, admin
+  status: text('status').notNull().default('active'), // active, inactive
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

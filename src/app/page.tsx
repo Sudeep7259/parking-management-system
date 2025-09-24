@@ -91,6 +91,7 @@ export default function Page() {
           { key: "billing", label: "Billing", href: "#" },
           { key: "visitors", label: "Visitors", href: "#" },
           { key: "reports", label: "Reports", href: "#" },
+          { key: "users", label: "Users", href: "#" },
           { key: "settings", label: "Settings", href: "#" },
         ];
       }
@@ -110,6 +111,7 @@ export default function Page() {
       "billing",
       "visitors",
       "reports",
+      "users",
       "settings",
     ];
     return [];
@@ -296,6 +298,12 @@ export default function Page() {
         {activeTab === "reports" && (
           <section className="space-y-6">
             <Reports />
+          </section>
+        )}
+
+        {activeTab === "users" && (
+          <section className="space-y-6">
+            <UserManagement />
           </section>
         )}
 
